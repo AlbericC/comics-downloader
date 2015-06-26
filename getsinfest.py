@@ -158,4 +158,4 @@ if __name__ == "__main__":
                 if confirm("Not to worry you, but {} files are about to be deleted.".format(num)):
                     rmtree(folder)
                     print("It's done. You told me to do it. I did it. No complaining now.")
-        input("Finished. Please press Enter")
+        print("Finished. Goodbye.")
