@@ -3,10 +3,9 @@ from shutil import rmtree
 import imghdr
 import os
 import queue
-from threading import Thread
 import datetime
 import zipfile
-
+from concurrent.futures import ThreadPoolExecutor
 import requests
 import begin
 
@@ -48,11 +47,13 @@ def conditional_download(filename, base_url, caller=None):
         src = requests.get(base_url + filename)
         # manage failure to download
         if src.status_code == 404:
+            src.close()
             return  # ignore it, that file is simply missing.
         if src.status_code != 200:  # an error other than 404 occurred
-            print("Error {} on {}".format(src.status_code, filename))
+            # print("Error {} on {}".format(src.status_code, filename))
+            src.close()
             if caller:  # retry that file later
-                caller.put((filename, caller))
+                caller.submit(conditional_download, filename, base_url, caller)
         # actually copy that file
         dst = open(filename, 'wb')
         dst.write(src.content)
@@ -61,36 +62,6 @@ def conditional_download(filename, base_url, caller=None):
         src.close()
         print("\t{} : fetched.".format(filename))
 
-
-class ThreadedWorker():
-    def __init__(self, function=None, number_of_threads=8):
-        self.queue = queue.Queue()
-
-        def func():
-            while True:
-                item = self.queue.get()
-                if function:
-                    function(*item)
-                else:
-                    print(item, "is being processed.")
-                self.queue.task_done()
-
-        self.function = func
-
-        for i in range(number_of_threads):
-            t = Thread(target=self.function, name="Thread-{:03}".format(i))
-            t.daemon = True
-            t.start()
-
-    def put(self, object_to_queue):
-        self.queue.put(object_to_queue)
-
-    def join(self):
-        self.queue.join()
-
-    def feed(self, iterator):
-        for task in iterator:
-            self.queue.put(task)
 
 
 def download_sinfest(target_folder):
@@ -104,12 +75,16 @@ def download_sinfest(target_folder):
 
     f = lambda filename, caller: conditional_download(filename, "http://www.sinfest.net/btphp/comics/", caller)
     # Make a worker with this function and run it
-    t = ThreadedWorker(function=f, number_of_threads=64)
-    # structure of comprehended list is a bit complex to generate all file names
-    files = [("".join([(datetime.date(2000, 1, 17) + datetime.timedelta(days=x)).isoformat(), ".gif"]), t)
-             for x in range((datetime.date.today() - datetime.date(2000, 1, 17)).days + 1)]
-    t.feed(files)
-    t.join()
+    # t = ThreadedWorker(function=f, number_of_threads=64)
+    # # structure of comprehended list is a bit complex to generate all file names
+    # files = [("".join([(datetime.date(2000, 1, 17) + datetime.timedelta(days=x)).isoformat(), ".gif"]), t)
+    #          for x in range((datetime.date.today() - datetime.date(2000, 1, 17)).days + 1)]
+    # t.feed(files)
+    # t.join()
+    with ThreadPoolExecutor(max_workers=64) as executor:
+        for file in ("".join([(datetime.date(2000, 1, 17) + datetime.timedelta(days=x)).isoformat(), ".gif"])
+                     for x in range((datetime.date.today() - datetime.date(2000, 1, 17)).days + 1)):
+            executor.submit(conditional_download, file, "http://www.sinfest.net/btphp/comics/", executor)
 
 
 @begin.start
