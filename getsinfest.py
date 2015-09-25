@@ -1,22 +1,21 @@
 #! /usr/bin/env python3.5
-from shutil import rmtree
 import imghdr
 import os
-import queue
 import datetime
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
+
 import requests
 import begin
 
 
 # Useful functions
-def make_cbz(dst_directory,src_directory):
+def make_cbz(dst_directory, src_directory):
     for year in range(2000, datetime.date.today().year + 1):
         with zipfile.ZipFile("Sinfest-{}.cbz".format(year), "w") as archive:
-            for file in os.scandir(src_directory):
-                if file.name.split("-")[0] == str(year):
-                    archive.write(src_directory + "/" + file, arcname=file)
+            for filename in os.listdir(src_directory):
+                if filename.startswith(str(year)):
+                    archive.write(src_directory + "/" + filename, arcname=filename)
         print("Sinfest-{}.cbz has been generated".format(year))
 
 
@@ -63,7 +62,6 @@ def conditional_download(filename, base_url, caller=None):
         print("\t{} : fetched.".format(filename))
 
 
-
 def download_sinfest(target_folder):
     """
     Source function for the process
@@ -73,14 +71,6 @@ def download_sinfest(target_folder):
         os.makedirs(target_folder)
     os.chdir(target_folder)
 
-    f = lambda filename, caller: conditional_download(filename, "http://www.sinfest.net/btphp/comics/", caller)
-    # Make a worker with this function and run it
-    # t = ThreadedWorker(function=f, number_of_threads=64)
-    # # structure of comprehended list is a bit complex to generate all file names
-    # files = [("".join([(datetime.date(2000, 1, 17) + datetime.timedelta(days=x)).isoformat(), ".gif"]), t)
-    #          for x in range((datetime.date.today() - datetime.date(2000, 1, 17)).days + 1)]
-    # t.feed(files)
-    # t.join()
     with ThreadPoolExecutor(max_workers=64) as executor:
         for file in ("".join([(datetime.date(2000, 1, 17) + datetime.timedelta(days=x)).isoformat(), ".gif"])
                      for x in range((datetime.date.today() - datetime.date(2000, 1, 17)).days + 1)):
@@ -89,13 +79,12 @@ def download_sinfest(target_folder):
 
 @begin.start
 def run(path: "folder in which the comics must be downloaded" = os.path.expanduser("~/Sinfest/"),
-        makecbz: "Compile CBZ comic book archives" = False,
-        cleanup: "Remove the gifs after cbz generation (with makecbz)" = False):
-    "Download the Sinfest WebComics"
+        makecbz: "Compile CBZ comic book archives" = False):
+    """Download the Sinfest WebComics"""
     download_sinfest(path)
     if makecbz:
-        make_cbz(os.path.pardir(path), path)
-        if cleanup:
-            rmtree(path)
+        dst = path[:-1] if path.endswith('/') else path
+        dst = "/".join(dst.split("/")[:-1])
+        make_cbz(dst, path)
     print("Finished. Goodbye.")
     exit()
