@@ -10,8 +10,8 @@ def fetch(number, destination: Path):
     image_name = comic.imageName
     # print("trying {}".format(number))
     target = "{}/{:>04}-{}".format(destination,number,image_name)
-    if Path(target).isfile():
-	    print("{:> 5}: ignored".format(number))
+    if Path(target).isfile() and Path(target + ".txt").isfile():
+	    # print("{:> 5}: ignored".format(number))
 	    return
     comic.download(outputFile=target)
     alt = comic.getAltText()
