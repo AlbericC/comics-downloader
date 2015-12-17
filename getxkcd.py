@@ -6,13 +6,21 @@ import xkcd
 
 
 def fetch(number, destination: Path):
+    """fetches a missing XKCD comic
+
+    Args:
+        number: the number id of the comic
+        destination (path.Path): where to store the downloaded content.
+    Returns:
+        None
+    """
     comic = xkcd.Comic(number)
     image_name = comic.imageName
     # print("trying {}".format(number))
-    target = "{}/{:>04}-{}".format(destination,number,image_name)
+    target = "{}/{:>04}-{}".format(destination, number, image_name)
     if Path(target).isfile() and Path(target + ".txt").isfile():
-	    # print("{:> 5}: ignored".format(number))
-	    return
+        # print("{:> 5}: ignored".format(number))
+        return
     comic.download(outputFile=target)
     alt = comic.getAltText()
     print("{:>5}: downloaded".format(number))
