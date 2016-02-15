@@ -15,7 +15,8 @@ def make_cbz(dst_directory, src_directory):
         with zipfile.ZipFile("Sinfest-{}.cbz".format(year), "w") as archive:
             for filename in os.listdir(src_directory):
                 if filename.startswith(str(year)):
-                    archive.write(src_directory + "/" + filename, arcname=filename)
+                    archive.write(src_directory + "/" +
+                                  filename, arcname=filename)
         print("Sinfest-{}.cbz has been generated".format(year))
 
 
@@ -43,7 +44,7 @@ def file_needs_download(filename):
 
 def conditional_download(filename, base_url, caller=None):
     if file_needs_download(filename):
-        src = requests.get(base_url + filename)
+        src = requests.get(base_url + filename, timeout=10)
         # manage failure to download
         if src.status_code == 404:
             src.close()
@@ -72,13 +73,18 @@ def download_sinfest(target_folder):
     os.chdir(target_folder)
 
     with ThreadPoolExecutor(max_workers=64) as executor:
-        for file in ("".join([(datetime.date(2000, 1, 17) + datetime.timedelta(days=x)).isoformat(), ".gif"])
-                     for x in range((datetime.date.today() - datetime.date(2000, 1, 17)).days + 1)):
-            executor.submit(conditional_download, file, "http://www.sinfest.net/btphp/comics/", executor)
+        for file in ("".join([(datetime.date(2000, 1, 17) +
+                               datetime.timedelta(days=x)).isoformat(),
+                              ".gif"])
+                     for x in range((datetime.date.today() -
+                                     datetime.date(2000, 1, 17)).days +
+                                    1)):
+            executor.submit(conditional_download, file,
+                            "http://www.sinfest.net/btphp/comics/", executor)
 
 
 @begin.start
-def run(path: "folder in which the comics must be downloaded" = os.path.expanduser("~/Sinfest/"),
+def run(path: "folder in which the comics must be downloaded"=os.path.expanduser("~/Sinfest/"),
         makecbz: "Compile CBZ comic book archives" = False):
     """Download the Sinfest WebComics"""
     download_sinfest(path)
