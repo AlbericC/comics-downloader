@@ -1,23 +1,22 @@
 #! /usr/bin/env python3.5
-from shutil import rmtree
 import imghdr
 import os
-import queue
-from threading import Thread
 import datetime
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 
 import requests
 import begin
 
 
 # Useful functions
-def make_cbz(dst_directory,src_directory):
+def make_cbz(dst_directory, src_directory):
     for year in range(2000, datetime.date.today().year + 1):
         with zipfile.ZipFile("Sinfest-{}.cbz".format(year), "w") as archive:
-            for file in os.scandir(src_directory):
-                if file.name.split("-")[0] == str(year):
-                    archive.write(src_directory + "/" + file, arcname=file)
+            for filename in os.listdir(src_directory):
+                if filename.startswith(str(year)):
+                    archive.write(src_directory + "/" +
+                                  filename, arcname=filename)
         print("Sinfest-{}.cbz has been generated".format(year))
 
 
@@ -45,14 +44,16 @@ def file_needs_download(filename):
 
 def conditional_download(filename, base_url, caller=None):
     if file_needs_download(filename):
-        src = requests.get(base_url + filename)
+        src = requests.get(base_url + filename, timeout=10)
         # manage failure to download
         if src.status_code == 404:
+            src.close()
             return  # ignore it, that file is simply missing.
         if src.status_code != 200:  # an error other than 404 occurred
-            print("Error {} on {}".format(src.status_code, filename))
+            # print("Error {} on {}".format(src.status_code, filename))
+            src.close()
             if caller:  # retry that file later
-                caller.put((filename, caller))
+                caller.submit(conditional_download, filename, base_url, caller)
         # actually copy that file
         dst = open(filename, 'wb')
         dst.write(src.content)
@@ -60,37 +61,6 @@ def conditional_download(filename, base_url, caller=None):
         dst.close()
         src.close()
         print("\t{} : fetched.".format(filename))
-
-
-class ThreadedWorker():
-    def __init__(self, function=None, number_of_threads=8):
-        self.queue = queue.Queue()
-
-        def func():
-            while True:
-                item = self.queue.get()
-                if function:
-                    function(*item)
-                else:
-                    print(item, "is being processed.")
-                self.queue.task_done()
-
-        self.function = func
-
-        for i in range(number_of_threads):
-            t = Thread(target=self.function, name="Thread-{:03}".format(i))
-            t.daemon = True
-            t.start()
-
-    def put(self, object_to_queue):
-        self.queue.put(object_to_queue)
-
-    def join(self):
-        self.queue.join()
-
-    def feed(self, iterator):
-        for task in iterator:
-            self.queue.put(task)
 
 
 def download_sinfest(target_folder):
@@ -102,25 +72,25 @@ def download_sinfest(target_folder):
         os.makedirs(target_folder)
     os.chdir(target_folder)
 
-    f = lambda filename, caller: conditional_download(filename, "http://www.sinfest.net/btphp/comics/", caller)
-    # Make a worker with this function and run it
-    t = ThreadedWorker(function=f, number_of_threads=64)
-    # structure of comprehended list is a bit complex to generate all file names
-    files = [("".join([(datetime.date(2000, 1, 17) + datetime.timedelta(days=x)).isoformat(), ".gif"]), t)
-             for x in range((datetime.date.today() - datetime.date(2000, 1, 17)).days + 1)]
-    t.feed(files)
-    t.join()
+    with ThreadPoolExecutor(max_workers=64) as executor:
+        for file in ("".join([(datetime.date(2000, 1, 17) +
+                               datetime.timedelta(days=x)).isoformat(),
+                              ".gif"])
+                     for x in range((datetime.date.today() -
+                                     datetime.date(2000, 1, 17)).days +
+                                    1)):
+            executor.submit(conditional_download, file,
+                            "http://www.sinfest.net/btphp/comics/", executor)
 
 
 @begin.start
-def run(path: "folder in which the comics must be downloaded" = os.path.expanduser("~/Sinfest/"),
-        makecbz: "Compile CBZ comic book archives" = False,
-        cleanup: "Remove the gifs after cbz generation (with makecbz)" = False):
-    "Download the Sinfest WebComics"
+def run(path: "folder in which the comics must be downloaded"=os.path.expanduser("~/Sinfest/"),
+        makecbz: "Compile CBZ comic book archives" = False):
+    """Download the Sinfest WebComics"""
     download_sinfest(path)
     if makecbz:
-        make_cbz(os.path.pardir(path), path)
-        if cleanup:
-            rmtree(path)
+        dst = path[:-1] if path.endswith('/') else path
+        dst = "/".join(dst.split("/")[:-1])
+        make_cbz(dst, path)
     print("Finished. Goodbye.")
     exit()
