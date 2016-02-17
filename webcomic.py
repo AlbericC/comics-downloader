@@ -1,6 +1,5 @@
-
 """
-Defines classes for webcomics
+Defines an abstract class for webcomics
 """
 
 
@@ -62,10 +61,7 @@ class WebComic(metaclass=abc.ABCMeta):
         """download the picture as `output_file` inside `folder`"""
         return None
 
-
-class XKCDComic(WebComic):
-    """WebComic specialization for xkcd"""
-
-
-class SinfestComic(WebComic):
-    """Webcomic specialization for Sinfest"""
+    @property
+    @abc.abstractmethod
+    def _has_target(self, folder, output_file):
+        """true if this comic can be downloaded to `output_file` inside `folder`"""
