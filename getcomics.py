@@ -23,6 +23,7 @@ WORKERS = 16
 
 Comic = namedtuple("Comic", ("comic_name", "uid", 'task', 'root_path'))
 
+
 def setup(root, subs):
     """
     make the requested directories.

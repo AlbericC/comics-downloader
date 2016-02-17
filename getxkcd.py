@@ -2,7 +2,6 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from path import Path
-from time import sleep
 
 import begin
 import xkcd
@@ -59,7 +58,6 @@ def progress(futures, total):
     """display a progress bar while futures are done"""
     with tqdm(total=total) as pbar:
         while futures:
-            sleep(0.5)
             not_yet = []
             for fut in futures:
                 if fut.done():
