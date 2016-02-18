@@ -5,6 +5,8 @@ Defines an abstract class for webcomics
 
 import abc
 
+import requests
+
 from path import Path
 
 
@@ -32,7 +34,7 @@ class WebComic(metaclass=abc.ABCMeta):
     @classmethod
     def set_destination(cls, path):
         """register this path as the destination for upcoming downloads"""
-        path = Path(path)
+        path = Path(path).expand().abspath()
         if not path.isdir():
             path.makedirs()
         cls.destination_folder = path
@@ -64,12 +66,6 @@ class WebComic(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def alt_url(self):
-        """url for alt text"""
-        return 'http://www.example.com/'
-
-    @property
-    @abc.abstractmethod
     def title(self):
         """title of this comic"""
         return "Placeholder title"
@@ -79,10 +75,24 @@ class WebComic(metaclass=abc.ABCMeta):
         """title of this comic, with number. Suitable to sort"""
         return '{:>04}-{}'.format(self.number, self.title)
 
-    @abc.abstractmethod
-    def download(self, folder, output_file):
-        """download the picture as `output_file` inside `folder`"""
-        return None
+    def download(self):
+        """download the picture"""
+        if self.destination_folder is None:
+            # quick abort download if destination was never set
+            return None
+        if not self.has_target(self.destination_folder):
+            return
+        src = requests.get(self.image_url, timeout=10)
+        if src.status_code == 404 or src.status_code != 200:
+            src.close()
+            return  # missing or network error or whatever
+        with open(self.destination_folder.joinpath(self.filename), 'wb') as dest:
+            dest.write(src.content)
+        src.close()
+        if self.alt_text:
+            with open(self.destination_folder.joinpath(self.filename) + '.txt', 'w') as dest:
+                dest.write(self.alt_text)
+        return self.destination_folder.joinpath(self.filename)
 
     @property
     @abc.abstractmethod

@@ -4,13 +4,12 @@ Defines a class for sinfest webcomics
 
 from datetime import date, timedelta
 
-import requests
-
 from .webcomic import WebComic
 
 
 class SinfestComic(WebComic):
-    """Class to describe Sinfest Comics
+    """
+    Class to describe Sinfest Comics
 
     Examples:
         >>> sinfests = SinfestComic.all()
@@ -64,17 +63,13 @@ class SinfestComic(WebComic):
 
     @property
     def alt_text(self):
-        """There is no alternative text for Sinfest, uses str instead"""
-        return str(self)
+        """There is no alternative text for Sinfest"""
+        return None
 
     @property
     def image_url(self):
         """url of hosted image"""
         return self.BASE_URL + self.uid + self.EXTENSION
-
-    @property
-    def alt_url(self):
-        """No alternative text for Sinfest, returns None"""
 
     @property
     def title(self):
@@ -89,18 +84,3 @@ class SinfestComic(WebComic):
     def utitle(self):
         """title of this comic, with number. Suitable to sort, and for file name"""
         return '{:>04}-{}'.format(self.number, self.uid).replace(' ', '_')
-
-    def download(self, folder=None, output_file=None):
-        """download the picture as `output_file` inside `folder`"""
-        if self.destination_folder is None:
-            # quick abort download if destination was never set
-            return None
-        if self.has_target(self.destination_folder):
-            src = requests.get(self.image_url, timeout=10)
-            if src.status_code == 404 or src.status_code != 200:
-                src.close()
-                return  # missing or network error or whatever
-            with open(self.destination_folder.joinpath(self.filename), 'wb') as dest:
-                dest.write(src.content)
-            src.close()
-            return self.destination_folder.joinpath(self.filename)
