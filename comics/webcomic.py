@@ -80,7 +80,7 @@ class WebComic(metaclass=abc.ABCMeta):
         if self.destination_folder is None:
             # quick abort download if destination was never set
             return None
-        if not self.has_target(self.destination_folder):
+        if not self.has_target(self.destination_folder) or not self.image_url:
             return
         src = requests.get(self.image_url, timeout=10)
         if src.status_code == 404 or src.status_code != 200:
