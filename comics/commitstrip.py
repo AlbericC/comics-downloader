@@ -70,7 +70,7 @@ class CommitStripComic(WebComic):
             return self.data
         self.data = None
         this_date = date(self.FIRST['y'], self.FIRST['m'], self.FIRST['d'])
-        this_date += timedelta(days=self.number)
+        this_date += timedelta(days=self.number - 1)
         url = self.DATEPAGE_TEMPLATE.format(l=self.LANG,
                                             y=this_date.year,
                                             m=this_date.month,
