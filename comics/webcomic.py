@@ -5,6 +5,8 @@ Defines an abstract class for webcomics
 
 import abc
 
+from path import Path
+
 
 class WebComic(metaclass=abc.ABCMeta):
     """Class for webcomics"""
@@ -14,8 +16,29 @@ class WebComic(metaclass=abc.ABCMeta):
     def latest_id():
         """Return the uid of the latest comic in the collection"""
 
+    @staticmethod
     @abc.abstractmethod
-    def __init__(self, collection, number):
+    def first_id():
+        """Return the uid of the first comic in the collection"""
+
+    @classmethod
+    @abc.abstractmethod
+    def all(cls):
+        """
+        return an iterable of all the currently
+        available comics form this collection
+        """
+
+    @classmethod
+    def set_destination(cls, path):
+        """register this path as the destination for upcoming downloads"""
+        path = Path(path)
+        if not path.isdir():
+            path.makedirs()
+        cls.destination_folder = path
+
+    @abc.abstractmethod
+    def __init__(self, number):
         """Make a WebComic object"""
         self.number = number
 
@@ -63,5 +86,12 @@ class WebComic(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def _has_target(self, folder, output_file):
+    def filename(self):
+        """The candidate filename for this comics image"""
+
+    def has_target(self, folder):
         """true if this comic can be downloaded to `output_file` inside `folder`"""
+        target = Path(folder).joinpath(self.filename)
+        if target.isfile():
+            return False
+        return True
