@@ -28,7 +28,7 @@ class CommitStripComic(WebComic):
 
     destination_folder = None
     FIRST = {'y': 2012, 'm': 2, 'd': 22}
-    DATEPAGE_TEMPLATE = 'http://www.commitstrip.com/fr/{y:>04}/{m:>02}/{d:>02}/'
+    DATEPAGE_TEMPLATE = 'http://www.commitstrip.com/{l}/{y:>04}/{m:>02}/{d:>02}/'
     COMICPAGE_TEMPLATE = 'http://www.commitstrip.com/wp-content/uploads/{y:>04}/{m:>02}/'
     TITLE_REGEX = re.compile(r'<title>(.*) \|.*</title>')
     LANG = 'en'
@@ -71,7 +71,10 @@ class CommitStripComic(WebComic):
         self.data = None
         this_date = date(self.FIRST['y'], self.FIRST['m'], self.FIRST['d'])
         this_date += timedelta(days=self.number)
-        url = self.DATEPAGE_TEMPLATE.format(y=this_date.year, m=this_date.month, d=this_date.day)
+        url = self.DATEPAGE_TEMPLATE.format(l=self.LANG,
+                                            y=this_date.year,
+                                            m=this_date.month,
+                                            d=this_date.day)
         firstpage = requests.get(url, timeout=10)
         if firstpage.status_code == 404:
             return

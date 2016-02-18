@@ -68,7 +68,8 @@ def process(comic):
 def main(root_path: "The root folder for comics"=DEFAULT_PATH,
          xkcd: "Get the xkcd webcomics"=True,
          sinfest: "Get the sinfest webcomics"=True,
-         commitstrip: "Grab CommitStrip comics"=True):
+         commitstrip: "Grab CommitStrip comics"=True,
+         commitstrip_lang: 'language in which to grab commitstrip {fr, en}'='fr'):
     """
     Download comics from the internet onto disk.
     """
@@ -86,6 +87,7 @@ def main(root_path: "The root folder for comics"=DEFAULT_PATH,
     if commitstrip:
         collections.append('commitstrip')
         CommitStripComic.set_destination(root_path.joinpath('commitstrip'))
+        CommitStripComic.LANG = commitstrip_lang
         comics_to_check += CommitStripComic.all()
     # make those directories if needed
     setup(root=root_path, subs=collections)
