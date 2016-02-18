@@ -67,8 +67,7 @@ def process(comic):
 @begin.start(auto_convert=True)
 def main(root_path: "The root folder for comics"=DEFAULT_PATH,
          xkcd: "Get the xkcd webcomics"=True,
-         sinfest: "Get the sinfest webcomics"=True,
-         commitstrip: "Get Commitstrips"=False):
+         sinfest: "Get the sinfest webcomics"=True):
     """
     Download comics from the internet onto disk.
     """
@@ -83,8 +82,6 @@ def main(root_path: "The root folder for comics"=DEFAULT_PATH,
         collections.append('sinfest')
         SinfestComic.set_destination(root_path.joinpath('sinfest'))
         comics_to_check += SinfestComic.all()
-    if commitstrip:
-        collections.append('commitstrip')
     # make those directories if needed
     setup(root=root_path, subs=collections)
 
