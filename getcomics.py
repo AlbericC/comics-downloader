@@ -6,14 +6,21 @@ This modules downloads all the comics from:
 In case the comics already exist on disk, skips the download, allowing to update a collection
 """
 
+import sys
+
 from concurrent.futures import ThreadPoolExecutor
+from random import shuffle
 
 import begin
 
 from path import Path
 from tqdm import tqdm
 
-from comics import SinfestComic, XKCDComic, CommitStripComic
+from comics import SinfestComic, XKCDComic, CommitStripComic, SMBCComic
+
+AVAIL_COLLECTIONS = 'xkcd,sinfest,commitstrip,smbc'
+COMICCLASSES = dict(zip(AVAIL_COLLECTIONS.split(','),
+                        [XKCDComic, SinfestComic, CommitStripComic, SMBCComic]))
 
 DEFAULT_PATH = Path("~/Images/comics")
 WORKERS = 32
@@ -66,31 +73,34 @@ def process(comic):
 
 @begin.start(auto_convert=True)
 def main(root_path: "The root folder for comics"=DEFAULT_PATH,
-         xkcd: "Get the xkcd webcomics"=True,
-         sinfest: "Get the sinfest webcomics"=True,
-         commitstrip: "Grab CommitStrip comics"=True,
-         commitstrip_lang: 'language in which to grab commitstrip {fr, en}'='fr'):
+         commitstrip_lang: 'language in which to grab commitstrip {fr, en}'='fr',
+         only: 'what comics to grab, separated with commas'=AVAIL_COLLECTIONS):
     """
     Download comics from the internet onto disk.
     """
 
-    collections = []
+    collections = only.split(',')
     comics_to_check = []
-    if xkcd:
-        collections.append('xkcd')
-        XKCDComic.set_destination(root_path.joinpath('xkcd'))
-        comics_to_check += XKCDComic.all()
-    if sinfest:
-        collections.append('sinfest')
-        SinfestComic.set_destination(root_path.joinpath('sinfest'))
-        comics_to_check += SinfestComic.all()
-    if commitstrip:
-        collections.append('commitstrip')
-        CommitStripComic.set_destination(root_path.joinpath('commitstrip'))
-        CommitStripComic.LANG = commitstrip_lang
-        comics_to_check += CommitStripComic.all()
+
+    dirs = [col for col in collections if col in COMICCLASSES]
     # make those directories if needed
-    setup(root=root_path, subs=collections)
+    setup(root=root_path, subs=dirs)
+    del dirs
+
+    for collection in collections:
+        if collection not in COMICCLASSES:
+            print(collection + ": is not implemented, did you mistype?", file=sys.stderr)
+            continue  # skip that
+
+        class_ = COMICCLASSES[collection]
+        # special case for commitstrip language
+        if class_ is CommitStripComic:
+            class_.LANG = commitstrip_lang
+        class_.set_destination(root_path.joinpath(collection))
+        comics_to_check += class_.all()
+
+    # shuffle the list to make time more predictable during download
+    shuffle(comics_to_check)
 
     executor = ThreadPoolExecutor(max_workers=WORKERS)
     futures = batch_submit(executor, func=process, items=comics_to_check)
