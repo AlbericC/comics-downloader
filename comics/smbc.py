@@ -118,6 +118,8 @@ class SMBCComic(WebComic):
     def download(self):
         out = [super().download()]
         # also get te second image (if any)
+        if out[0] is None:
+            return
         if 'imgurl2' in self.data:
             src = requests.get(self.data['imgurl2'], timeout=10)
             if src.status_code != 200:
@@ -127,4 +129,4 @@ class SMBCComic(WebComic):
             with open(target, 'wb') as dest:
                 dest.write(src.content)
             out.append(target)
-        return out if len(out) != 1 else out[0]
+        return out
