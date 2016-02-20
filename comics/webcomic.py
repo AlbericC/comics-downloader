@@ -13,6 +13,8 @@ from path import Path
 class WebComic(metaclass=abc.ABCMeta):
     """Class for webcomics"""
 
+    destination_folder = None
+
     @staticmethod
     @abc.abstractmethod
     def latest_id():
