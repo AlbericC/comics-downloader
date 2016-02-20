@@ -7,6 +7,7 @@ from .webcomic import WebComic
 from .xkcd import XKCDComic
 from .sinfest import SinfestComic
 from .commitstrip import CommitStripComic
+from .smbc import SMBCComic
 
-__all__ = ['WebComic', 'XKCDComic', 'SinfestComic', 'CommitStripComic']
+__all__ = ['WebComic', 'XKCDComic', 'SinfestComic', 'CommitStripComic', 'SMBCComic']
 __author__ = "Atrament"
