@@ -128,7 +128,7 @@ class CommitStripComic(WebComic):
     @property
     def filename(self):
         """The candidate filename for this comics image"""
-        if not self.ensure_data:
+        if not self.ensure_data():
             return
         imgname = self.image_url.split('/')[-1]
         return '{:>04}-{}'.format(self.number, imgname)
