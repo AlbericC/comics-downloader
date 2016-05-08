@@ -3,6 +3,8 @@
 This modules downloads all the comics from:
     - sinfest
     - xkcd
+    - CommitStrip
+    - SMBC
 In case the comics already exist on disk, skips the download, allowing to update a collection
 """
 
